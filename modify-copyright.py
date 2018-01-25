@@ -2,13 +2,18 @@
 
 import os
 import re
+import time
 
 # set the dir you want to modify Copyright
-cocos2dx_dir = '/Users/laptop/2d-x/cocos'
+cocos2dx_dir = '/Users/laptop/2d-x'
 # cocos2dx_dir = 'F:\cocos2d-x-3.16\cmake'
-
+# add file folder filter, absolute path for now
+cc_filter_folders = [r'^/Users/laptop/2d-x/external',r'^/Users/laptop/2d-x/tools']
 # file types, need to be modify
-cc_file_types = r'^h$|^js$|^c$|^cc$|^cpp$|^java$|^json$|^txt$|^py$|^am$|^sh$|^mk$|^Makefile$|^xml$|^README$'
+cc_file_types = r'^h$|^c$|^cc$|^cpp$|^java$|^json$|^txt$|^py$|^am$|^sh$|^mk$|^Makefile$|^xml$|^README$'
+
+# log file name
+cc_log_file = time.strftime('%Y%m%d%H%M%S',time.localtime(time.time())) + ".log"
 # the total Copyright which need replace, use this to get prefix
 cc_pattern_all_content = r'Copyright.{0,20} Chukong Technologies Inc.\n$'
 # old Copyright part, will replace to cc_replace_ck_2016
@@ -38,10 +43,10 @@ def get_copyright_prefix(single_line):
 
     return copyright_prefix
 
-# reuse from https://github.com/jingjingpiggy/copyright
+# reuse and custom from https://github.com/jingjingpiggy/copyright
 def go_through_all_files(dir_path):
     """
-    Go throught all files under dir_path, filter file format by suffix.
+    Go throught all files under dir_path, filter file type and folder
 
     @param dir_path: relative or absolute directory path
     @return: all eligible files
@@ -55,16 +60,26 @@ def go_through_all_files(dir_path):
         else:
             return r
 
+    # return true if find it, other false
+    def filter_folder(path):
+        for cc_single_filter in cc_filter_folders:
+            r = re.search(cc_single_filter, path)
+            if r:
+                return True
+        return False
+
     files_set = set()
     for root, dirs, files in os.walk(dir_path):
+        if filter_folder(root):
+            continue
         for filespath in files:
-            if filter_file(filespath) and not re.findall(r'include\/linux', root):
+            if filter_file(filespath):
                 files_set.add(os.path.join(root,filespath))
 
     return files_set
 
 cocos_file_set = go_through_all_files(cocos2dx_dir)
-
+cocos_modify_record = ["modify cocos Copyright"]
 # travel all files, modify needed
 for ccfile in cocos_file_set:
     file_opened = open(ccfile, "r+")
@@ -85,7 +100,9 @@ for ccfile in cocos_file_set:
             cc_line_ext = get_copyright_prefix(cc_line) + cc_replace_xm_2017
             cc_lines_after.append(cc_line_ext)
 
-            print "Copyright modified: " + file_opened.name
+            single_log = "\nCopyright modified: " + file_opened.name
+            print single_log
+            cocos_modify_record.append(single_log)
         
     # empty old file, add write lines after modify
     file_opened.seek(0, 0)
@@ -93,3 +110,7 @@ for ccfile in cocos_file_set:
     file_opened.writelines(cc_lines_after)
     # close file
     file_opened.close()
+    # write log
+    file_log = open(cc_log_file, "w+")
+    file_log.writelines(cocos_modify_record)
+    file_log.close()
