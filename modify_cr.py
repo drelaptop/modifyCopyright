@@ -8,12 +8,11 @@ import time
 import cr_utils
 
 # set the dir you want to modify Copyright
-cocos2dx_dir = '/Users/laptop/2d-x/tests'
+cocos2dx_dir = '/Users/laptop/2d-x'
 # add file folder filter, absolute path for now
 cc_filter_folders = [
-    r'^/Users/laptop/2d-x/external',
-    r'^/Users/laptop/2d-x/tools',
-    r'^/Users/laptop/2d-x/cocos',
+    r'^/Users/laptop/2d-x/cocos/scripting/js-bindings/auto',
+    r'^/Users/laptop/2d-x/cocos/scripting/lua-bindings/auto',
     r'^/Users/laptop/2d-x/web'
     ]
 # file types, need to be modify
