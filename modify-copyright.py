@@ -8,9 +8,9 @@ import time
 cocos2dx_dir = '/Users/laptop/2d-x'
 # cocos2dx_dir = 'F:\cocos2d-x-3.16\cmake'
 # add file folder filter, absolute path for now
-cc_filter_folders = [r'^/Users/laptop/2d-x/external',r'^/Users/laptop/2d-x/tools']
+cc_filter_folders = [r'^/Users/laptop/2d-x/external',r'^/Users/laptop/2d-x/tools',r'^/Users/laptop/2d-x/cocos']
 # file types, need to be modify
-cc_file_types = r'^h$|^c$|^cc$|^cpp$|^java$|^json$|^txt$|^py$|^am$|^sh$|^mk$|^Makefile$|^xml$|^README$'
+cc_file_types = r'^h$|^mm$|^c$|^hpp$|^cpp$|^java$|^py$|^js$|^lua$'
 
 # log file name
 cc_log_file = time.strftime('%Y%m%d%H%M%S',time.localtime(time.time())) + ".log"
@@ -23,7 +23,7 @@ cc_replace_ck_2016 = "-2016 Chukong Technologies Inc.\n"
 # external line Copyright of Xiamen Yaji Software, it need a prefix
 cc_replace_xm_2017 = "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.\n"
 # TODO: the Copyright info to add, when can't find Copyright info
-cc_copyright_new_header= ""
+cc_copyright_new_header= "Copyright Template.txt"
 
 # get Copyright prefix
 def get_copyright_prefix(single_line):
@@ -82,6 +82,7 @@ cocos_file_set = go_through_all_files(cocos2dx_dir)
 cocos_modify_record = ["modify cocos Copyright"]
 # travel all files, modify needed
 for ccfile in cocos_file_set:
+    is_file_modified = False
     file_opened = open(ccfile, "r+")
     # lines of the source file
     cc_lines = file_opened.readlines()
@@ -99,18 +100,47 @@ for ccfile in cocos_file_set:
             # add external line, Copyright of Xiamen Yaji Software
             cc_line_ext = get_copyright_prefix(cc_line) + cc_replace_xm_2017
             cc_lines_after.append(cc_line_ext)
+            is_file_modified = True
+    # after deal a file
+    single_log = ""
+    if is_file_modified:
+        single_log = "\nModified Yes: " + file_opened.name
+    else:
+        # judge is need to add
+        is_file_need_add = False
+        cc_line_num = 0
+        for cc_line in cc_lines:
+            cc_line_num = cc_line_num + 1
+            print cc_line_num
+            ret = re.search(r'\/\*', cc_line)
+            # copyright shoud be added, if no "/*" comment in 3 lines
+            if ret and cc_line_num < 3:
+                print ret.span()
+                break
+            elif cc_line_num > 2:
+                is_file_need_add = True
+                break
+        # do add Copyright from template
+        if not is_file_need_add:
+            single_log = "\nModified No : " + file_opened.name
+        else:
+            single_log = "\nModified Add: " + file_opened.name
+            file_template = open(cc_copyright_new_header, "r")
+            template_lines = file_template.readlines()
+            file_template.close()
+            cc_lines_after = template_lines + cc_lines
+            pass
+    print single_log
+    cocos_modify_record.append(single_log)
 
-            single_log = "\nCopyright modified: " + file_opened.name
-            print single_log
-            cocos_modify_record.append(single_log)
-        
     # empty old file, add write lines after modify
     file_opened.seek(0, 0)
     file_opened.truncate()
     file_opened.writelines(cc_lines_after)
     # close file
     file_opened.close()
-    # write log
-    file_log = open(cc_log_file, "w+")
-    file_log.writelines(cocos_modify_record)
-    file_log.close()
+
+# write log
+file_log = open(cc_log_file, "w+")
+file_log.writelines(cocos_modify_record)
+file_log.close()
