@@ -31,7 +31,7 @@ cc_replace_ck_2016 = "-2016 Chukong Technologies Inc.\n"
 # external line Copyright of Xiamen Yaji Software, it need a prefix
 cc_replace_xm_2017 = "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.\n"
 # the Copyright info to add, when can't find Copyright info
-cc_all_copyright_content= "Copyright Template.txt"
+cc_all_copyright_content= "cr_template.txt"
 
 
 cocos_file_list = cr_utils.go_through_all_files(cocos2dx_dir, cc_file_types, cc_filter_folders)
