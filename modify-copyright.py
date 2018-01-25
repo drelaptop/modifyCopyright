@@ -6,7 +6,6 @@ import time
 
 # set the dir you want to modify Copyright
 cocos2dx_dir = '/Users/laptop/2d-x'
-# cocos2dx_dir = 'F:\cocos2d-x-3.16\cmake'
 # add file folder filter, absolute path for now
 cc_filter_folders = [r'^/Users/laptop/2d-x/external',r'^/Users/laptop/2d-x/tools',r'^/Users/laptop/2d-x/cocos']
 # file types, need to be modify
@@ -22,7 +21,7 @@ cc_pattern_need_replace = r'-[0-5,7-9]{0,4} Chukong Technologies Inc.\n$'
 cc_replace_ck_2016 = "-2016 Chukong Technologies Inc.\n"
 # external line Copyright of Xiamen Yaji Software, it need a prefix
 cc_replace_xm_2017 = "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.\n"
-# TODO: the Copyright info to add, when can't find Copyright info
+# the Copyright info to add, when can't find Copyright info
 cc_copyright_new_header= "Copyright Template.txt"
 
 # get Copyright prefix
