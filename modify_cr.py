@@ -5,8 +5,10 @@ import os
 import re
 import time
 
+import cr_utils
+
 # set the dir you want to modify Copyright
-cocos2dx_dir = '/Users/laptop/2d-x'
+cocos2dx_dir = '/Users/laptop/2d-x/tests'
 # add file folder filter, absolute path for now
 cc_filter_folders = [
     r'^/Users/laptop/2d-x/external',
@@ -31,92 +33,11 @@ cc_replace_xm_2017 = "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.\n"
 # the Copyright info to add, when can't find Copyright info
 cc_copyright_new_header= "Copyright Template.txt"
 
-def get_first_comment_block_length(line_list):
-    """
-    get first Copyright comment block length in source, which style like:
-    /***
-    ...Copyright..
-    ***/
-    @param line_list: all lines of a source file
-    @return: length of first comment lines
-    @rtype: int
-    """
-    is_get_comment_up_line = False
-    is_get_comment_down_line = False
-    cc_comment_num = 0
-    for cc_line in line_list:
-        cc_comment_num = cc_comment_num + 1
-        up_ret = re.search(r'\/\*', cc_line)
-        if up_ret and cc_comment_num < 3:
-            is_get_comment_up_line = True
-        if is_get_comment_up_line:
-            down_ret = re.search(r'\*\/', cc_line)
-            if down_ret:
-                is_get_comment_down_line = True
-                break
-    # 
-    if cc_comment_num > 1:
-        for i in range(0, cc_comment_num - 1):
-            if line_list[i].find("Copyright") >= 0:
-                return cc_comment_num
-    return 0
-# get Copyright prefix
-def get_copyright_prefix(single_line):
-    """
-    get Copyright prefix
 
-    @param single_line: single line, might be Copyright line
-    @return: string before Copyright, "", "", " * " or others
-    @rtype: string
-    """
-    copyright_prefix = ""
-    search_ret = re.search(cc_pattern_all_content, single_line)
-
-    if search_ret != None:
-        position = search_ret.span()
-        copyright_prefix = single_line[0:position[0]]
-
-    return copyright_prefix
-
-# reuse and custom from https://github.com/jingjingpiggy/copyright
-def go_through_all_files(dir_path):
-    """
-    Go throught all files under dir_path, filter file type and folder
-
-    @param dir_path: relative or absolute directory path
-    @return: all eligible files
-    @rtype: list
-    """
-    def filter_file(file_name):
-        suffix_pattern = re.compile(cc_file_types)
-        ret = suffix_pattern.match(file_name.split('.')[-1])
-        if not ret:
-            return None
-        else:
-            return ret
-
-    # return true if find it, other false
-    def filter_folder(path):
-        for cc_single_filter in cc_filter_folders:
-            ret = re.search(cc_single_filter, path)
-            if ret:
-                return True
-        return False
-
-    files_list = []
-    for root, dirs, files in os.walk(dir_path):
-        if filter_folder(root):
-            continue
-        for file_name in files:
-            if filter_file(file_name):
-                files_list.append(os.path.join(root,file_name))
-
-    return files_list
-
-cocos_file_set = go_through_all_files(cocos2dx_dir)
-cocos_modify_record = ["modify cocos Copyright"]
+cocos_file_list = cr_utils.go_through_all_files(cocos2dx_dir, cc_file_types, cc_filter_folders)
+cocos_modify_record = ["Cocos2d-x Copyright Modify..."]
 # travel all files, modify needed
-for ccfile in cocos_file_set:
+for ccfile in cocos_file_list:
     is_file_modified = False
     file_opened = open(ccfile, "r+")
     # lines of the source file
@@ -134,17 +55,17 @@ for ccfile in cocos_file_set:
             cc_line_new = re.sub(cc_pattern_need_replace, cc_replace_ck_2016, cc_line)
             cc_lines_after.append(cc_line_new)
             # add external line, Copyright of Xiamen Yaji Software
-            cc_line_ext = get_copyright_prefix(cc_line) + cc_replace_xm_2017
+            cc_line_ext = cr_utils.get_copyright_prefix(cc_line, cc_pattern_all_content) + cc_replace_xm_2017
             cc_lines_after.append(cc_line_ext)
             is_file_modified = True
     # after deal a file
     single_log = ""
     if is_file_modified:
-        single_log = "\nModified Yes: " + file_opened.name
+        single_log = "\nModified OK : " + file_opened.name
     else:
         # judge is need to add
         is_file_need_add = False
-        if get_first_comment_block_length(cc_lines) <= 0:
+        if cr_utils.get_first_comment_block_length(cc_lines, r'\/\*', r'\*\/') <= 0:
             is_file_need_add = True
         # do add Copyright from template
         if not is_file_need_add:
@@ -159,7 +80,7 @@ for ccfile in cocos_file_set:
             else:
                 single_log = "\nNeed Review : " + file_opened.name
                 # deal files only need add a single line
-                cc_comment_len = get_first_comment_block_length(cc_lines)
+                cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, r'\/\*', r'\*\/')
                 cc_count = 0
                 cc_lines_temp = []
                 is_add_single_line = False
@@ -169,7 +90,7 @@ for ccfile in cocos_file_set:
                     # len(cc_lines[cc_count]) < 4, for content maybe " * \n"
                     if cc_count < cc_comment_len and cc_lines[cc_count-1].find("Copyright") >= 0 and len(cc_lines[cc_count]) < 4:
                         # add external line, Copyright of Xiamen Yaji Software
-                        cc_line_ext = get_copyright_prefix(cc_line) + cc_replace_xm_2017
+                        cc_line_ext = cr_utils.get_copyright_prefix(cc_line, cc_pattern_all_content) + cc_replace_xm_2017
                         cc_lines_temp.append(cc_line_ext)
                         is_add_single_line = True
                 if is_add_single_line:
@@ -180,7 +101,7 @@ for ccfile in cocos_file_set:
 
 
         else:
-            single_log = "\nTemplate Add : " + file_opened.name
+            single_log = "\nTemplate Add: " + file_opened.name
             file_template = open(cc_copyright_new_header, "r")
             template_lines = file_template.readlines()
             file_template.close()
