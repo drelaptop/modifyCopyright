@@ -1,0 +1,1 @@
+# modify Cocos2d-x Copyright
