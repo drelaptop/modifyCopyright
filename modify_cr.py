@@ -4,11 +4,13 @@
 import os
 import re
 import time
-
+import io
+import chardet
+import codecs
 import cr_utils
 
 # set the dir you want to modify Copyright
-cocos2dx_dir = '/Users/laptop/2d-x'
+cocos2dx_dir = '/Users/laptop/2d-x//cocos/editor-support/cocostudio'
 # add file folder filter, absolute path for now
 cc_filter_folders = [
     r'^/Users/laptop/2d-x/cocos/scripting/js-bindings/auto',
@@ -111,10 +113,31 @@ def add_single_line(cc_lines):
     else:
         return []
 
+# old files have encode utf-8-sig
+def cocos_get_encode(filename):
+    bytes = min(32, os.path.getsize(filename))
+    fo = open(filename, 'rb')
+    raw = fo.read(bytes)
+    encoding = ""
+    if raw.startswith(codecs.BOM_UTF8):
+        encoding = 'utf-8-sig'
+    else:
+        result = chardet.detect(raw)
+        encoding = result['encoding']
+    fo.close()
+    return encoding
+
+def cocos_lines2utf8(lines):
+    lines_ret = []
+    for line in lines:
+        lines_ret.append(line.decode('utf-8'))
+    return lines_ret
+
 # travel all files, modify needed
 for ccfile in cocos_file_list:
 
-    file_opened = open(ccfile, "r+")
+    cc_encode = cocos_get_encode(ccfile)
+    file_opened = io.open(ccfile, "r+", encoding=cc_encode)
     # lines of the source file
     cc_lines = file_opened.readlines()
     # source lines, after modified
@@ -154,6 +177,7 @@ for ccfile in cocos_file_list:
         # empty old file, add write lines after modify
         file_opened.seek(0, 0)
         file_opened.truncate()
+        cc_lines_after = cocos_lines2utf8(cc_lines_after)
         file_opened.writelines(cc_lines_after)
     # close file
     file_opened.close()
