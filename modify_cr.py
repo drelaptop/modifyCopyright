@@ -19,11 +19,13 @@ cocos2dx_dir = '/Users/laptop/2d-x'
 cc_filter_folders = [
     r'^/Users/laptop/2d-x/cocos/scripting/js-bindings/auto',
     r'^/Users/laptop/2d-x/cocos/scripting/lua-bindings/auto',
-    r'^/Users/laptop/2d-x/web',
-    r'^/Users/laptop/2d-x/external'
-    r'^/Users/laptop/2d-x/tools/bindings-generator'
-    r'^/Users/laptop/2d-x/tools/cocos2d-console'
-    r'^/Users/laptop/2d-x/tools/simulator/libsimulator/lib/protobuf-lite/google'
+    r'^/Users/laptop/2d-x/web',# sub modual
+    r'^/Users/laptop/2d-x/external',## sub modual and third party
+    r'^/Users/laptop/2d-x/tools/bindings-generator',# sub modual
+    r'^/Users/laptop/2d-x/tools/cocos2d-console',# sub modual
+    r'^/Users/laptop/2d-x/cocos/editor-support/spine', #not belong to cocos
+    r'^/Users/laptop/2d-x/tests/cpp-tests/Classes/SpineTest',#not belong to cocos
+    r'^/Users/laptop/2d-x/tools/simulator/libsimulator/lib/protobuf-lite/google',#not belong to cocos
     ]
 # file types, need to be modify
 cc_file_types = r'^h$|^mm$|^c$|^hpp$|^cpp$|^java$|^js$'
@@ -42,13 +44,15 @@ cc_replace_xm_2017 = "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.\n"
 # the Copyright info to add, when can't find Copyright info
 cc_all_copyright_content= "cr_template.txt"
 
+comment_up_edge = "r'\/\*'"
+comment_down_edge =  "r'\*\/'"
 
 cocos_file_list = cr_utils.go_through_all_files(cocos2dx_dir, cc_file_types, cc_filter_folders)
 cocos_modify_record = ["Cocos2d-x Copyright Modify..."]
 
 def is_changed_finish(cc_lines):
     """
-    return true if we can find cc_replace_xm_2017 in lines
+    return true if we can "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd." in lines
     """
     is_done_before = False
     # can improve, reduce the range
@@ -93,7 +97,7 @@ def add_total_cr_if_needed(cc_lines):
     ->
     add all Copyright content in file cc_all_copyright_content
     """
-    if cr_utils.get_first_comment_block_length(cc_lines, "r'\/\*'", "r'\*\/'") <= 0:
+    if cr_utils.get_first_comment_block_length(cc_lines, comment_up_edge, comment_down_edge) <= 0:
         file_template = open(cc_all_copyright_content, "r")
         template_lines = file_template.readlines()
         file_template.close()
@@ -109,7 +113,7 @@ def add_single_line(cc_lines):
     Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
 
     """
-    cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, "r'\/\*'", "r'\*\/'")
+    cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, comment_up_edge, comment_down_edge)
     cc_count = 0
     cc_lines_ret = []
     is_changed = False
@@ -128,9 +132,51 @@ def add_single_line(cc_lines):
         return cc_lines_ret
     else:
         return []
+
+def add_after_last_cy(cc_lines):
+    """
+    * Copyright (c) 2012 cocos2d-x.org
+    * http://www.cocos2d-x.org
+    *
+    * Copyright 2012 Yannick Loriot. All rights reserved.
+    * http://yannickloriot.com
+    * 
+    * Permission is hereby granted,
+    ->
+    * Copyright (c) 2012 cocos2d-x.org
+    * http://www.cocos2d-x.org
+    *
+    * Copyright 2012 Yannick Loriot. All rights reserved.
+    * http://yannickloriot.com
+    * 
+    * Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+    * 
+    * Permission is hereby granted,
+    """
+    is_cc = is_cocos_comment(cc_lines)
+    cr_length = cr_utils.get_first_comment_block_length(cc_lines, comment_up_edge, comment_down_edge)
+    line_num = 0
+    cc_lines_ret = []
+    is_changed = False
+    for cc_line in cc_lines:
+        line_num = line_num + 1
+        if line_num > cr_length:
+            break
+        find_ret = cc_line.find("Permission is hereby granted")
+        if find_ret >= 0:
+            cc_prefix = cc_line[0:find_ret]
+            cc_lines_ret.append(cc_prefix + cc_replace_xm_2017)
+            cc_lines_ret.append(cc_prefix + "\n")
+            is_changed = True
+        cc_lines_ret.append(cc_line)
+    if is_cc and is_changed:
+        return cc_lines_ret
+    else:
+        return []
+
 # judge the comment block is in a cocos2d-x self's source file
 def is_cocos_comment(lines):
-    cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, "r'\/\*'", "r'\*\/'")
+    cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, comment_up_edge, comment_down_edge)
     # use to prevent to change the third party source file
     exist_cocos_flag = False
     exist_chukong_flag = False
@@ -204,6 +250,11 @@ for ccfile in cocos_file_list:
         cc_lines_after = add_single_line(cc_lines)
         if len(cc_lines_after) > 0:
             single_log = "\nSingle Add  - "
+            is_need_rewrite = True
+            break
+        cc_lines_after = add_after_last_cy(cc_lines)
+        if len(cc_lines_after) > 0:
+            single_log = "\nAdd In Last - "
             is_need_rewrite = True
             break
         single_log = "\nNeed Review - "
