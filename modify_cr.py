@@ -5,17 +5,25 @@ import os
 import re
 import time
 import io
+import sys
 import chardet
 import codecs
 import cr_utils
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 # set the dir you want to modify Copyright
-cocos2dx_dir = '/Users/laptop/2d-x//cocos/editor-support/cocostudio'
+cocos2dx_dir = '/Users/laptop/2d-x'
 # add file folder filter, absolute path for now
 cc_filter_folders = [
     r'^/Users/laptop/2d-x/cocos/scripting/js-bindings/auto',
     r'^/Users/laptop/2d-x/cocos/scripting/lua-bindings/auto',
-    r'^/Users/laptop/2d-x/web'
+    r'^/Users/laptop/2d-x/web',
+    r'^/Users/laptop/2d-x/external'
+    r'^/Users/laptop/2d-x/tools/bindings-generator'
+    r'^/Users/laptop/2d-x/tools/cocos2d-console'
+    r'^/Users/laptop/2d-x/tools/simulator/libsimulator/lib/protobuf-lite/google'
     ]
 # file types, need to be modify
 cc_file_types = r'^h$|^mm$|^c$|^hpp$|^cpp$|^java$|^js$'
@@ -93,6 +101,14 @@ def add_total_cr_if_needed(cc_lines):
     return []
 
 def add_single_line(cc_lines):
+    """
+    Copyright (c) 2012 cocos2d-x.org
+        
+    ->
+    Copyright (c) 2012 cocos2d-x.org
+    Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
+
+    """
     cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, "r'\/\*'", "r'\*\/'")
     cc_count = 0
     cc_lines_ret = []
@@ -108,10 +124,30 @@ def add_single_line(cc_lines):
             cc_line_ext = cr_utils.get_copyright_prefix(cc_line, cc_pattern_all_content) + cc_replace_xm_2017
             cc_lines_ret.append(cc_line_ext)
             is_changed = True
-    if is_changed:
+    if is_cocos_comment(cc_lines) and is_changed:
         return cc_lines_ret
     else:
         return []
+# judge the comment block is in a cocos2d-x self's source file
+def is_cocos_comment(lines):
+    cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, "r'\/\*'", "r'\*\/'")
+    # use to prevent to change the third party source file
+    exist_cocos_flag = False
+    exist_chukong_flag = False
+    if cc_comment_len <= 0:
+        return True
+    lin_num = 0
+    for cc_line in cc_lines:
+        lin_num = lin_num + 1
+        find_cc = cc_line.find("cocos2d-x")
+        if find_cc >= 0:
+            exist_cocos_flag = True
+        find_ck = cc_line.find("Chukong")
+        if find_ck >= 0:
+            exist_chukong_flag = True
+        if lin_num >= cc_comment_len:
+            break
+    return (exist_chukong_flag or exist_cocos_flag)
 
 # old files have encode utf-8-sig
 def cocos_get_encode(filename):
@@ -125,6 +161,9 @@ def cocos_get_encode(filename):
         result = chardet.detect(raw)
         encoding = result['encoding']
     fo.close()
+    # it might be a  mistake when judge a encode type
+    if encoding == 'ascii':
+        encoding = 'utf-8'
     return encoding
 
 def cocos_lines2utf8(lines):
@@ -139,6 +178,7 @@ for ccfile in cocos_file_list:
     cc_encode = cocos_get_encode(ccfile)
     file_opened = io.open(ccfile, "r+", encoding=cc_encode)
     # lines of the source file
+    print file_opened.name
     cc_lines = file_opened.readlines()
     # source lines, after modified
     cc_lines_after = []
@@ -148,28 +188,32 @@ for ccfile in cocos_file_list:
 
     while True:
         if is_changed_finish(cc_lines):
-            single_log = "\nDone Before : "
+            single_log = "\nDone Before - "
             break
         cc_lines_after = add_total_cr_if_needed(cc_lines)
         if len(cc_lines_after) > 0:
-            single_log = "\nTemplate Add: "
+            single_log = "\nTemplate Add- "
             is_need_rewrite = True
             break
         cc_lines_after = modify_and_add_line(cc_lines)
         if len(cc_lines_after) > 0:
-            single_log = "\nModified OK : "
+            single_log = "\nModified OK - "
             is_need_rewrite = True
             break
         # Single Add must behand other modified
         cc_lines_after = add_single_line(cc_lines)
         if len(cc_lines_after) > 0:
-            single_log = "\nSingle Add  : "
+            single_log = "\nSingle Add  - "
             is_need_rewrite = True
             break
-        single_log = "\nNeed Review : "
+        single_log = "\nNeed Review - "
         break
-
-    single_log = single_log + file_opened.name
+    if cc_encode:
+        encode_log = 'File Type(' + cc_encode + ') '
+    else:
+        encode_log = 'File Type(error) ' 
+    
+    single_log = single_log + encode_log + file_opened.name
     print single_log
     cocos_modify_record.append(single_log)
 
