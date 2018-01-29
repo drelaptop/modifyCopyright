@@ -9,7 +9,7 @@
 ## Log Comments
 1. __Done Before__
     
-    find `Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.` in first comment block
+    found `Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.` in first comment block
 
 1. __Modified OK__
 
@@ -67,4 +67,4 @@
 
 1. __Need Review__
 
-    not any one of above items， make this
+    not any one of above items, mark this
