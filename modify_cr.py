@@ -26,6 +26,7 @@ cc_filter_folders = [
     r'^/Users/laptop/2d-x/cocos/editor-support/spine', #not belong to cocos
     r'^/Users/laptop/2d-x/tests/cpp-tests/Classes/SpineTest',#not belong to cocos
     r'^/Users/laptop/2d-x/tools/simulator/libsimulator/lib/protobuf-lite/google',#not belong to cocos
+    r'^/Users/laptop/2d-x/tests/cpp-tests/Classes/Box2DTestBed',#not belong to cocos
     ]
 # file types, need to be modify
 cc_file_types = r'^h$|^mm$|^c$|^hpp$|^cpp$|^java$|^js$'
@@ -117,6 +118,7 @@ def add_single_line(cc_lines):
     cc_count = 0
     cc_lines_ret = []
     is_changed = False
+    is_cc = is_cocos_comment(cc_lines)
     if cc_comment_len <= 0:
         return []
     for cc_line in cc_lines:
@@ -128,7 +130,7 @@ def add_single_line(cc_lines):
             cc_line_ext = cr_utils.get_copyright_prefix(cc_line, cc_pattern_all_content) + cc_replace_xm_2017
             cc_lines_ret.append(cc_line_ext)
             is_changed = True
-    if is_cocos_comment(cc_lines) and is_changed:
+    if is_cc and is_changed:
         return cc_lines_ret
     else:
         return []
@@ -181,7 +183,7 @@ def is_cocos_comment(lines):
     exist_cocos_flag = False
     exist_chukong_flag = False
     if cc_comment_len <= 0:
-        return True
+        return False
     lin_num = 0
     for cc_line in cc_lines:
         lin_num = lin_num + 1
