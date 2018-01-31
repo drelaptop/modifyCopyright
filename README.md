@@ -1,10 +1,16 @@
-# modify Cocos2d-x Copyright
+# modify Cocos Copyright
 
 ## commit - log
 
   Commit: [script modify copyright, consider is cocos copyright or not](https://github.com/cocos2d/cocos2d-x/pull/18659/commits/aafd35f221a6c9b73b270ab502fe1a870d33770c)
 
   Log File: 20180129104517.log
+  
+## Install
+
+```bash
+pip install chardet
+```
 
 ## Log Comments
 1. __Done Before__
