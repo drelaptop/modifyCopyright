@@ -37,10 +37,11 @@ cc_log_file = time.strftime('%Y%m%d%H%M%S',time.localtime(time.time())) + ".log"
 # the total Copyright which need replace, use this to get prefix
 cc_pattern_all_content = r'Copyright.{0,50}$'
 # old Copyright part, will replace to cc_replace_ck_2016
-cc_pattern_need_replace = r'-[0-5,7-9]{0,4} Chukong Technologies Inc.\n$'
+cc_pattern_need_replace = r'[0-9]{4} Chukong Technologies Inc.\n$'
 # new Copyright part, replace cc_pattern_need_replace
-cc_replace_ck_2016 = "-2016 Chukong Technologies Inc.\n"
+cc_replace_ck_2016 = "2016 Chukong Technologies Inc.\n"
 # external line Copyright of Xiamen Yaji Software, it need a prefix
+cc_ck = "Copyright (c) 2013-2016 Chukong Technologies Inc.\n"
 cc_replace_xm_2017 = "Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.\n"
 # the Copyright info to add, when can't find Copyright info
 cc_all_copyright_content= "cr_template.txt"
@@ -64,6 +65,20 @@ def is_changed_finish(cc_lines):
             break
     return is_done_before
 
+def add_chukong(cc_lines):
+    """
+    Copyright (c) 2012 cocos2d-x.org
+    ->
+    Copyright (c) 2012 cocos2d-x.org
+    Copyright (c) 2013-2016 Chukong Technologies Inc.
+    """
+    for cc_line in cc_lines:
+        if re.search(cc_pattern_need_replace, cc_line):
+            # has chukong
+            return cc_lines
+    # add chukong
+    return add_single_line(cc_lines, cc_ck)
+
 def modify_and_add_line(cc_lines):
     """
     Copyright (c) 2013-2017 Chukong Technologies Inc.
@@ -73,7 +88,7 @@ def modify_and_add_line(cc_lines):
     """
     is_changed = False
     cc_lines_ret = []
-     # might improve
+    # might improve
     for cc_line in cc_lines:
         s_ret = re.search(cc_pattern_need_replace, cc_line)
         if not s_ret:
@@ -105,14 +120,12 @@ def add_total_cr_if_needed(cc_lines):
         return (template_lines + cc_lines)
     return []
 
-def add_single_line(cc_lines):
+def add_single_line(cc_lines, new_copyright):
     """
     Copyright (c) 2012 cocos2d-x.org
-        
     ->
     Copyright (c) 2012 cocos2d-x.org
     Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
-
     """
     cc_comment_len = cr_utils.get_first_comment_block_length(cc_lines, comment_up_edge, comment_down_edge)
     cc_count = 0
@@ -127,7 +140,7 @@ def add_single_line(cc_lines):
         # len(cc_lines[cc_count]) < 4, for content maybe " * \n"
         if cc_count < cc_comment_len and cc_lines[cc_count-1].find("Copyright") >= 0 and len(cc_lines[cc_count]) < 4:
             # add external line, Copyright of Xiamen Yaji Software
-            cc_line_ext = cr_utils.get_copyright_prefix(cc_line, cc_pattern_all_content) + cc_replace_xm_2017
+            cc_line_ext = cr_utils.get_copyright_prefix(cc_line, cc_pattern_all_content) + new_copyright
             cc_lines_ret.append(cc_line_ext)
             is_changed = True
     if is_cc and is_changed:
@@ -243,13 +256,14 @@ for ccfile in cocos_file_list:
             single_log = "\nTemplate Add- "
             is_need_rewrite = True
             break
+        cc_lines = add_chukong(cc_lines)
         cc_lines_after = modify_and_add_line(cc_lines)
         if len(cc_lines_after) > 0:
             single_log = "\nModified OK - "
             is_need_rewrite = True
             break
         # Single Add must behand other modified
-        cc_lines_after = add_single_line(cc_lines)
+        cc_lines_after = add_single_line(cc_lines, cc_replace_xm_2017)
         if len(cc_lines_after) > 0:
             single_log = "\nSingle Add  - "
             is_need_rewrite = True
